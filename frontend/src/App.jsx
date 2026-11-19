@@ -22,7 +22,7 @@ const [aiAnswer, setAiAnswer] = useState("");
 
 
 const loadTransactions = () => {
-  fetch("http://localhost:5000/api/transactions")
+  fetch("http://localhost:5000/api/transactions") 
     .then(response => response.json())
     .then(data => {
       setTransactions(data.transactions);
