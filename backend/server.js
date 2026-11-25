@@ -4,10 +4,16 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
-
+require("dotenv").config({ path: path.join(__dirname, ".env"), override: true });
+console.log("PayPal env loaded:", {
+  hasClientId: Boolean(process.env.PAYPAL_CLIENT_ID),
+  hasClientSecret: Boolean(process.env.PAYPAL_CLIENT_SECRET),
+  baseUrl: process.env.PAYPAL_BASE_URL
+});
 
 const app = express();
+const { GoogleGenAI } = require("@google/genai");
+const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(cors());
 app.use(express.json());
@@ -113,78 +119,7 @@ app.get("/api/transactions", (req, res) => {
 });
 // MoneyPilot AI Assistant
 
-app.post("/api/ai/chat", async (req, res) => {
-  try {
-    const { question } = req.body;
 
-    if (!question || typeof question !== "string" || !question.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Please enter a question."
-      });
-    }
-
-    if (question.length > 2000) {
-      return res.status(400).json({
-        success: false,
-        message: "Question is too long."
-      });
-    }
-
-    const completedTransactions = transactions.filter(
-      t => t.status === "Completed" || t.status === "Demo Completed"
-    );
-
-    const transactionSummary = {
-      totalTransactions: transactions.length,
-      completedTransactions: completedTransactions.length,
-      transactions: completedTransactions.slice(0, 50).map(t => ({
-        name: t.name,
-        type: t.type,
-        amount: t.amount,
-        currency: t.currency,
-        status: t.status,
-        date: t.date
-      }))
-    };
-
-    const prompt = `
-You are MoneyPilot AI, a personal finance assistant.
-
-Answer clearly and simply.
-Analyze only the supplied transaction data.
-Never invent financial facts.
-Respect transaction currencies.
-Mention that records may include demo transactions.
-Give practical budgeting suggestions when appropriate.
-Never claim to execute payments.
-
-Customer question:
-${question}
-
-Transaction data:
-${JSON.stringify(transactionSummary, null, 2)}
-`;
-
-    const response = await gemini.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt
-    });
-
-    res.json({
-      success: true,
-      answer: response.text || "Please try asking another question."
-    });
-
-  } catch (error) {
-    console.error("Gemini API error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Gemini AI could not respond. Check your API key, model access and quota."
-    });
-  }
-});
 
 
 // MoneyPilot AI Assistant - Google Gemini
@@ -256,10 +191,34 @@ Customer transaction data:
 ${JSON.stringify(transactionSummary, null, 2)}
 `;
 
-    const response = await gemini.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt
-    });
+    const modelsToTry = [
+      "gemini-3.8-flash",
+      "gemini-3.7-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.6-flash"
+    ];
+
+    let response;
+    let lastError;
+    for (const model of modelsToTry) {
+      try {
+        response = await gemini.models.generateContent({
+          model,
+          contents: prompt
+        });
+        break;
+      } catch (err) {
+        lastError = err;
+        if (err?.status !== 429 && err?.status !== 503 && err?.status !== 404) {
+          throw err;
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError;
+    }
+    
 
     res.json({
       success: true,
@@ -397,8 +356,8 @@ app.post("/api/paypal/create-order", async (req, res) => {
           }
         ],
         application_context: {
-          return_url: "http://localhost:5173/?paypal=success",
-          cancel_url: "http://localhost:5173/?paypal=cancel",
+         return_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/?paypal=success`,
+cancel_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/?paypal=cancel`,
           user_action: "PAY_NOW"
         }
       })

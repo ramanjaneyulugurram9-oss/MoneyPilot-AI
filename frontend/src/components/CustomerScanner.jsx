@@ -1,6 +1,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 
 function CustomerScanner({ onPaymentSuccess })  {
   const scannerRef = useRef(null);
@@ -272,7 +274,7 @@ try {
     showMessage("Processing your demo transaction...", "info");
 
     try {
-      const response = await fetch("http://localhost:5000/api/transactions", {
+     const response = await fetch(`${API_URL}/api/transactions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

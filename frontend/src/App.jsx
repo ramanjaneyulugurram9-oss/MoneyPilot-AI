@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import MerchantQR from "./components/merchantqr";
 import CustomerScanner from "./components/CustomerScanner";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const menu = [
   "Overview",
-  "Scan & Pay",
+  "Scan & Pay", 
   "Online Shopping",
   "Transactions",
   "AI Assistant",
@@ -22,7 +23,7 @@ const [aiAnswer, setAiAnswer] = useState("");
 
 
 const loadTransactions = () => {
-  fetch("http://localhost:5000/api/transactions") 
+     fetch(`${API_URL}/api/transactions`)
     .then(response => response.json())
     .then(data => {
       setTransactions(data.transactions);
@@ -35,7 +36,7 @@ const loadTransactions = () => {
 
 useEffect(() => {
   const loadTransactions = () => {
-    fetch("http://localhost:5000/api/transactions")
+        fetch(`${API_URL}/api/transactions`)
       .then((response) => response.json())
       .then((data) => {
         setTransactions(data.transactions || []);
@@ -65,7 +66,7 @@ useEffect(() => {
   if (paypalStatus === "success" && orderID) {
     window.history.replaceState({}, "", "/");
 
-    fetch("http://localhost:5000/api/paypal/capture-order", {
+        fetch(`${API_URL}/api/paypal/capture-order`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -80,8 +81,9 @@ useEffect(() => {
         }
 
         const transactionResponse = await fetch(
-          "http://localhost:5000/api/transactions"
+          `${API_URL}/api/transactions`
         );
+
         const transactionData = await transactionResponse.json();
 
         setTransactions(transactionData.transactions || []);
@@ -122,7 +124,7 @@ const handlePaypalCheckout = async () => {
 
   try {
     const response = await fetch(
-      "http://localhost:5000/api/paypal/create-order",
+           `${API_URL}/api/paypal/create-order`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -430,7 +432,7 @@ const handlePaypalCheckout = async () => {
       style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
       createOrder={async () => {
         const response = await fetch(
-          "http://localhost:5000/api/paypal/create-order",
+                   `${API_URL}/api/paypal/create-order`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -448,7 +450,7 @@ const handlePaypalCheckout = async () => {
       }}
       onApprove={async (data) => {
         const response = await fetch(
-          "http://localhost:5000/api/paypal/capture-order",
+                    `${API_URL}/api/paypal/capture-order`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -465,7 +467,7 @@ const handlePaypalCheckout = async () => {
         alert("PayPal Sandbox payment completed!");
 
         const transactionResponse = await fetch(
-          "http://localhost:5000/api/transactions"
+                    `${API_URL}/api/transactions`
         );
         const transactionData = await transactionResponse.json();
 
@@ -619,7 +621,8 @@ const handlePaypalCheckout = async () => {
         setAiAnswer("");
 
         try {
-          const response = await fetch("http://localhost:5000/api/ai/chat", {
+                    const response = await fetch(`${API_URL}/api/ai/chat`, {
+                      
             method: "POST",
             headers: {
               "Content-Type": "application/json"
