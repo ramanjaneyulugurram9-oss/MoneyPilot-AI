@@ -7,3 +7,12 @@ node_modules/
 !.env.example
 **/transactions.json
 dist/
+# Python files
+__pycache__/
+*.pyc
+
+# Coverage reports
+coverage/
+
+# Vite cache
+.vite/
